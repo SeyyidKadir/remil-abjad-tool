@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Remil · Şifreleme Aracı</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Amiri:wght@400;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --void:#020305;--void-2:#060810;--void-3:#0b1020;--void-4:#101828;
+  --gold:#c9a84c;--gold-dim:#906020;--gold-dark:#251a05;
+  --gold-glow:#c9a84c1a;--gold-faint:#c9a84c08;--gold-mid:#c9a84c44;
+  --text-bright:#f0e8d0;--text-mid:#7a6a4a;--text-dim:#2e2818;
+  --crimson:#7a1212;--crimson-glow:#7a121218;
+  --mono:'JetBrains Mono',monospace;--serif:'Cinzel',serif;--arabic:'Amiri',serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--void);color:var(--text-bright);font-family:var(--mono);min-height:100vh;overflow-x:hidden;cursor:crosshair;}
+
+.bg-stars{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%,#c9a84c44 0%,transparent 100%),
+    radial-gradient(1px 1px at 90% 10%,#c9a84c33 0%,transparent 100%),
+    radial-gradient(1px 1px at 50% 90%,#c9a84c22 0%,transparent 100%),
+    radial-gradient(1px 1px at 75% 60%,#c9a84c33 0%,transparent 100%),
+    radial-gradient(1px 1px at 20% 80%,#c9a84c44 0%,transparent 100%);
+  animation:twinkle 8s ease-in-out infinite alternate;}
+@keyframes twinkle{0%{opacity:.3}100%{opacity:.9}}
+.bg-grid{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(#12121e 1px,transparent 1px),
+  linear-gradient(90deg,#12121e 1px,transparent 1px);
+  background-size:60px 60px;opacity:.15;}
+.bg-vignette{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse at center,transparent 20%,#020305ee 100%);}
+
+header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(2,3,5,.96);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--gold-dark);
+  padding:.8rem 2rem;
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  flex-wrap:wrap;
+}
+.hdr-left{display:flex;align-items:center;gap:1.2rem;}
+.logo-ar{font-family:var(--arabic);font-size:2.4rem;color:var(--gold);text-shadow:0 0 40px var(--gold-glow);animation:pgold 4s ease-in-out infinite;}
+@keyframes pgold{0%,100%{text-shadow:0 0 20px var(--gold-glow);}50%{text-shadow:0 0 60px var(--gold),0 0 100px var(--gold-glow);}}
+.hdr-text h1{font-family:var(--serif);font-size:1rem;font-weight:900;letter-spacing:.4em;color:var(--text-bright);}
+.hdr-text p{font-size:.5rem;letter-spacing:.2em;color:var(--text-mid);text-transform:uppercase;margin-top:.15rem;}
+
+/* Dil seçimi — header sağ */
+.lang-btns{display:flex;gap:.35rem;flex-wrap:wrap;}
+.lb{background:var(--void-3);border:1px solid var(--gold-dark);color:var(--text-mid);
+  font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;
+  padding:.3rem .65rem;cursor:crosshair;transition:all .25s;white-space:nowrap;}
+.lb:hover{color:var(--text-bright);}
+.lb.active{border-color:var(--gold);color:var(--gold);background:var(--gold-faint);}
+
+/* SECTION TABS */
+.section-tabs{
+  position:relative;z-index:10;
+  background:var(--void-2);border-bottom:1px solid var(--gold-dark);
+  padding:0 2rem;display:flex;gap:0;overflow-x:auto;scrollbar-width:none;
+}
+.section-tabs::-webkit-scrollbar{display:none;}
+.stab{
+  background:transparent;border:none;
+  border-bottom:2px solid transparent;
+  color:var(--text-dim);font-family:var(--mono);
+  font-size:.55rem;letter-spacing:.12em;
+  padding:.7rem .8rem;cursor:crosshair;
+  white-space:nowrap;transition:all .3s;text-transform:uppercase;
+}
+.stab:hover{color:var(--text-mid);}
+.stab.active{color:var(--gold);border-bottom-color:var(--gold);}
+.stab .stab-icon{margin-right:.3rem;opacity:.6;}
+
+/* NAV (remil sekmeleri) */
+nav{
+  position:relative;z-index:10;
+  background:var(--void-3);border-bottom:1px solid var(--gold-dark);
+  padding:0 2rem;display:flex;gap:0;overflow-x:auto;scrollbar-width:none;
+  display:none;
+}
+nav.visible{display:flex;}
+nav::-webkit-scrollbar{display:none;}
+.nb{background:transparent;border:none;border-bottom:2px solid transparent;
+  color:var(--text-dim);font-family:var(--mono);font-size:.55rem;
+  letter-spacing:.13em;padding:.7rem .9rem;cursor:crosshair;
+  white-space:nowrap;transition:all .3s;text-transform:uppercase;}
+.nb:hover{color:var(--text-mid);}
+.nb.active{color:var(--gold);border-bottom-color:var(--gold);}
+
+main{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:2rem;}
+
+/* SECTION wrappers */
+.section{display:none;}
+.section.active{display:block;}
+
+.panel{display:none;}
+.panel.active{display:block;animation:fin .35s ease;}
+@keyframes fin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.card{background:var(--void-2);border:1px solid var(--gold-dark);padding:1.5rem;margin-bottom:1.5rem;position:relative;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold-mid),transparent);}
+.card-title{font-family:var(--serif);font-size:.7rem;letter-spacing:.3em;color:var(--gold);text-transform:uppercase;margin-bottom:1.2rem;display:flex;align-items:center;gap:.6rem;}
+.card-title::before{content:'◆';font-size:.45rem;}
+
+.lbl{display:block;font-size:.52rem;letter-spacing:.2em;color:var(--text-mid);text-transform:uppercase;margin-bottom:.5rem;}
+input[type=text],textarea{width:100%;background:var(--void-3);border:1px solid var(--gold-dark);color:var(--text-bright);font-family:var(--mono);font-size:1rem;padding:.75rem 1rem;outline:none;transition:all .3s;}
+input[type=text]:focus,textarea:focus{border-color:var(--gold-dim);box-shadow:0 0 20px var(--gold-faint);}
+input[type=text]::placeholder,textarea::placeholder{color:var(--text-dim);}
+textarea{resize:vertical;min-height:90px;line-height:1.6;}
+textarea.ar-dir{direction:rtl;font-family:var(--arabic);font-size:1.1rem;}
+.hint{font-size:.55rem;color:var(--text-dim);margin-top:.4rem;letter-spacing:.08em;}
+
+.sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--gold-mid),transparent);margin:1.2rem 0;}
+
+/* REMIL */
+.remil-symbol{display:inline-flex;flex-direction:column;gap:3px;padding:.5rem .7rem;background:var(--void-3);border:1px solid var(--gold-dark);min-width:55px;align-items:center;}
+.remil-row{display:flex;gap:3px;align-items:center;height:12px;}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 5px var(--gold);flex-shrink:0;}
+.line{width:20px;height:2px;background:var(--gold-dim);flex-shrink:0;}
+.sym-grid{display:flex;flex-wrap:wrap;gap:1rem;margin-top:1rem;}
+.sym-item{text-align:center;}
+.sym-label{font-size:.5rem;color:var(--text-mid);margin-top:.3rem;letter-spacing:.1em;}
+.sym-no{font-size:.6rem;color:var(--gold);margin-bottom:.25rem;}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{font-size:.5rem;letter-spacing:.18em;color:var(--text-mid);text-transform:uppercase;padding:.4rem .6rem;border-bottom:1px solid var(--gold-dark);text-align:left;}
+.tbl td{font-size:.72rem;padding:.42rem .6rem;border-bottom:1px solid var(--void-4);color:var(--text-bright);vertical-align:middle;}
+.tbl tr:hover td{background:var(--gold-faint);}
+.ar{font-family:var(--arabic);font-size:1.2rem;color:var(--gold);}
+.gld{color:var(--gold);}
+.dim{color:var(--text-mid);}
+.k0{color:var(--gold);}
+.k1{color:var(--text-dim);}
+
+/* ELEMENT */
+.el-grid{display:flex;flex-wrap:wrap;gap:.75rem;margin-top:1rem;}
+.el-item{background:var(--void-3);border:1px solid var(--gold-dark);padding:.75rem;text-align:center;min-width:100px;}
+.el-harf{font-family:var(--arabic);font-size:1.8rem;color:var(--gold);}
+.el-ebced{font-size:.6rem;color:var(--text-mid);margin:.2rem 0;}
+.el-arrow{font-size:.7rem;color:var(--text-dim);margin:.2rem 0;}
+.el-name{font-size:.7rem;color:var(--text-bright);}
+.el-ar{font-family:var(--arabic);font-size:1rem;color:var(--gold-dim);}
+.el-no{font-size:.55rem;color:var(--text-dim);}
+
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem;}
+.chip{background:var(--void-3);border:1px solid var(--gold-dark);padding:.2rem .55rem;font-size:.68rem;color:var(--gold);}
+
+/* ŞİFRELEME */
+.info-box{
+  background:var(--gold-faint);
+  border:1px solid var(--gold-dark);
+  padding:1rem 1.2rem;
+  margin-bottom:1.5rem;
+  font-size:.72rem;color:var(--text-mid);line-height:1.9;
+}
+.info-box strong{color:var(--gold);}
+
+.alpha-prev{
+  font-size:.62rem;color:#2e2818;
+  letter-spacing:.06em;line-height:1.7;
+  margin-bottom:1.2rem;word-break:break-all;
+  padding:.6rem .8rem;
+  border:1px solid var(--gold-dark);
+  background:var(--void-3);
+}
+.alpha-prev.ar-dir{direction:rtl;font-family:var(--arabic);font-size:.9rem;color:#3a3020;}
+
+.run-btn{
+  width:100%;padding:.85rem;
+  background:linear-gradient(135deg,var(--gold),var(--gold-dim));
+  border:none;color:var(--void);
+  font-family:var(--mono);font-weight:700;
+  font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;
+  cursor:crosshair;transition:all .25s;margin-bottom:1.5rem;
+}
+.run-btn:hover{filter:brightness(1.15);transform:translateY(-1px);box-shadow:0 4px 20px var(--gold-glow);}
+.run-btn:active{transform:translateY(0);}
+
+.error-box{
+  background:var(--crimson-glow);border:1px solid var(--crimson);
+  padding:.6rem 1rem;color:#e08080;font-size:.72rem;
+  margin-bottom:1rem;display:none;
+}
+
+.result-box{
+  border:1px solid var(--gold-dark);background:var(--void-3);
+  padding:1.2rem;min-height:60px;display:none;position:relative;
+}
+.result-box.visible{display:block;}
+.result-label{font-size:.55rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.8rem;}
+.result-text{font-size:1.3rem;letter-spacing:.1em;word-break:break-all;line-height:2;color:var(--text-bright);}
+.result-text.ar-dir{font-family:var(--arabic);font-size:1.7rem;direction:rtl;text-align:right;}
+.result-meta{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--gold-dark);font-size:.68rem;color:var(--text-mid);line-height:2;}
+.meta-row{display:flex;flex-wrap:wrap;gap:4px 18px;margin-bottom:4px;}
+.mk{color:var(--gold-dim);}
+.step-chain{margin-top:4px;font-size:.63rem;color:#2e2818;word-break:break-all;line-height:1.8;}
+.sc-char{color:var(--gold);}
+
+.copy-btn{
+  position:absolute;top:8px;right:8px;
+  padding:2px 8px;background:transparent;
+  border:1px solid var(--gold-dark);
+  color:var(--text-dim);font-family:var(--mono);font-size:.6rem;
+  cursor:crosshair;transition:all .2s;
+}
+.copy-btn:hover{color:var(--gold);border-color:var(--gold);}
+
+/* Alfa önizleme bölümü */
+.lang-section{margin-bottom:1.2rem;}
+
+/* DISCLAIMER BANNER */
+.disclaimer{
+  position:relative;z-index:10;
+  background:linear-gradient(135deg,#0d0d00,#1a1500);
+  border-bottom:1px solid var(--gold-dark);
+  border-top:1px solid var(--gold-dark);
+  padding:.65rem 2rem;
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  flex-wrap:wrap;
+}
+.disclaimer::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold-mid),transparent);
+}
+.disclaimer-text{
+  font-size:.62rem;letter-spacing:.07em;
+  color:var(--text-mid);line-height:1.8;flex:1;
+}
+.disclaimer-text strong{color:var(--gold);letter-spacing:.1em;}
+.disclaimer-icon{
+  font-family:var(--arabic);font-size:1.4rem;color:var(--gold-dim);
+  opacity:.5;flex-shrink:0;
+}
+
+@media(max-width:580px){
+  main{padding:1rem;}
+  header{padding:.7rem 1rem;}
+  .section-tabs{padding:0 .5rem;}
+  .disclaimer{padding:.65rem 1rem;}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-stars"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<!-- HEADER -->
+<header>
+  <div class="hdr-left">
+    <div class="logo-ar">ر م ل</div>
+    <div class="hdr-text">
+      <h1 id="hdr-title">DÖNÜŞTÜRÜCÜ & ŞİFRELEME</h1>
+      <p id="hdr-sub">Remil · Element · Harf Şifreleme</p>
+    </div>
+  </div>
+  <div class="lang-btns">
+    <button class="lb active" onclick="setLang('tr')" id="lb-tr">🇹🇷 TR</button>
+    <button class="lb" onclick="setLang('en')" id="lb-en">🇬🇧 EN</button>
+    <button class="lb" onclick="setLang('id')" id="lb-id">🇮🇩 ID</button>
+    <button class="lb" onclick="setLang('ar')" id="lb-ar">🇸🇦 عربي</button>
+  </div>
+</header>
+
+<!-- ANA BÖLÜM SEKMELERİ -->
+<div class="section-tabs">
+  <button class="stab active" id="stab-remil" onclick="showSection('remil',this)">
+    <span class="stab-icon">◈</span><span data-i18n="sec_remil">Remil & Element</span>
+  </button>
+  <button class="stab" id="stab-cipher1" onclick="showSection('cipher1',this)">
+    <span class="stab-icon">◉</span><span data-i18n="sec_c1">Şifreleme I — Baş·Son</span>
+  </button>
+  <button class="stab" id="stab-cipher2" onclick="showSection('cipher2',this)">
+    <span class="stab-icon">◎</span><span data-i18n="sec_c2">Şifreleme II — Toplam</span>
+  </button>
+</div>
+
+<!-- DISCLAIMER BANNER -->
+<div class="disclaimer" id="disclaimer-bar">
+  <div class="disclaimer-icon">⚠</div>
+  <div class="disclaimer-text" id="disclaimer-text"></div>
+</div>
+
+<!-- REMİL ALT NAV -->
+<nav id="remil-nav" class="visible">
+  <button class="nb active" onclick="showP('p1',this)" data-i18n="nav1">Girdi</button>
+  <button class="nb" onclick="showP('p2',this)" data-i18n="nav2">Remil Sembolü</button>
+  <button class="nb" onclick="showP('p3',this)" data-i18n="nav3">Remil Tablosu</button>
+  <button class="nb" onclick="showP('p4',this)" data-i18n="nav4">Element Analizi</button>
+</nav>
+
+<main>
+
+<!-- ══════════ BÖLÜM: REMİL ══════════ -->
+<div class="section active" id="sec-remil">
+
+  <!-- P1: GİRDİ -->
+  <div class="panel active" id="p1">
+    <div class="card">
+      <div class="card-title" data-i18n="p1title">Girdi</div>
+      <label class="lbl" data-i18n="p1lbl">Metin (Arapça / Latin) veya Sayı</label>
+      <input id="girdi" type="text" placeholder="أحمد  ·  Ahmed  ·  786" oninput="isle()" autocomplete="off" spellcheck="false"/>
+      <div class="hint" data-i18n="p1hint">Arapça metin, Türkçe/Latin metin veya sayı girebilirsiniz.</div>
+    </div>
+    <div class="card" id="p1sonuc" style="display:none;">
+      <div class="card-title" data-i18n="p1res">Ebced Değeri</div>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+        <div style="background:var(--void-3);border:1px solid var(--gold-dark);padding:1rem;flex:1;text-align:center;">
+          <div class="lbl" data-i18n="p1type">Girdi Türü</div>
+          <div style="font-family:var(--serif);font-size:1rem;color:var(--gold);" id="p1tur">—</div>
+        </div>
+        <div style="background:var(--void-3);border:1px solid var(--gold-dark);padding:1rem;flex:1;text-align:center;">
+          <div class="lbl" data-i18n="p1ebced">Ebced / Sayı</div>
+          <div style="font-family:var(--serif);font-size:2rem;color:var(--gold);text-shadow:0 0 20px var(--gold-glow);" id="p1val">—</div>
+        </div>
+      </div>
+      <div id="p1harfler" style="display:none;margin-top:1rem;">
+        <div class="sep"></div>
+        <div class="lbl" data-i18n="p1letters">Harf Bazlı Ebced</div>
+        <div id="p1harflist" style="display:flex;flex-wrap:wrap;gap:.6rem;margin-top:.5rem;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P2: REMİL SEMBOLÜ -->
+  <div class="panel" id="p2">
+    <div class="card">
+      <div class="card-title" data-i18n="p2title">Remil Sembolleri</div>
+      <div id="p2empty" class="hint" style="color:var(--text-dim);padding:.5rem 0;" data-i18n="empty">Önce Girdi sekmesinden değer girin.</div>
+      <div id="p2content" style="display:none;">
+        <div class="lbl"><span data-i18n="p2input">Girdi:</span> <span id="p2gval" style="color:var(--gold);"></span></div>
+        <div class="sep"></div>
+        <div class="lbl" style="margin-bottom:.75rem;" data-i18n="p2desc">Her adımda ÷2 → en yakın harf → remil sembolü</div>
+        <div class="sym-grid" id="p2grid"></div>
+        <div class="sep"></div>
+        <div class="lbl" style="margin-bottom:.5rem;" data-i18n="p2chain">Zincir:</div>
+        <div id="p2zincir" style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:flex-start;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P3: REMİL TABLOSU -->
+  <div class="panel" id="p3">
+    <div class="card">
+      <div class="card-title" data-i18n="p3title">Remil Dönüşüm Tablosu</div>
+      <div id="p3empty" class="hint" style="color:var(--text-dim);padding:.5rem 0;" data-i18n="empty">Önce Girdi sekmesinden değer girin.</div>
+      <div id="p3content" style="display:none;">
+        <div class="lbl"><span data-i18n="p3total">Toplam:</span> <span id="p3top" style="color:var(--gold);"></span></div>
+        <table class="tbl" style="margin-top:1rem;">
+          <thead><tr>
+            <th data-i18n="th1">Adım</th><th>÷2</th><th data-i18n="th2">Sonuç</th>
+            <th data-i18n="th3">Harf</th><th>Ebced</th><th data-i18n="th4">Remil No</th><th data-i18n="th5">Kalan</th>
+          </tr></thead>
+          <tbody id="p3tbody"></tbody>
+        </table>
+        <div class="sep"></div>
+        <div class="lbl" style="margin-bottom:.4rem;" data-i18n="p3s0">Kalan 0 (önce):</div>
+        <div class="chips" id="p3s0"></div>
+        <div style="margin:.6rem 0 .4rem;font-size:.52rem;color:var(--text-mid);letter-spacing:.2em;text-transform:uppercase;" data-i18n="p3s1">Kalan 1 (sonra):</div>
+        <div class="chips" id="p3s1"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P4: ELEMENT ANALİZİ -->
+  <div class="panel" id="p4">
+    <div class="card">
+      <div class="card-title" data-i18n="p4title">Element Analizi</div>
+      <div id="p4empty" class="hint" style="color:var(--text-dim);padding:.5rem 0;" data-i18n="empty">Önce Girdi sekmesinden değer girin.</div>
+      <div id="p4content" style="display:none;">
+        <div class="lbl" data-i18n="p4desc">Her harf → en yakın periyodik element</div>
+        <div class="sep"></div>
+        <div class="el-grid" id="p4grid"></div>
+        <div class="sep"></div>
+        <div class="lbl" style="margin-bottom:.5rem;" data-i18n="p4dominant">Baskın Element:</div>
+        <div id="p4baskin" style="font-family:var(--serif);font-size:1.1rem;color:var(--gold);"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /sec-remil -->
+
+<!-- ══════════ BÖLÜM: ŞİFRELEME I ══════════ -->
+<div class="section" id="sec-cipher1">
+  <div class="card">
+    <div class="card-title" id="c1-title">Baş · Son Kaydırma</div>
+    <div class="info-box" id="c1-info"></div>
+    <div class="lang-section">
+      <div class="lbl" id="c1-lbl-alpha"></div>
+      <div class="alpha-prev" id="c1-ap"></div>
+    </div>
+    <div class="lbl" id="c1-lbl-input"></div>
+    <textarea id="c1-input" style="margin-bottom:1rem;"></textarea>
+    <div class="error-box" id="c1-err"></div>
+    <button class="run-btn" id="c1-btn" onclick="runAlgo1()"></button>
+    <div class="result-box" id="c1-result">
+      <button class="copy-btn" id="c1-copy" onclick="copyRes('c1-rt')"></button>
+      <div class="result-label" id="c1-lbl-out"></div>
+      <div class="result-text" id="c1-rt"></div>
+      <div class="result-meta" id="c1-rm"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ BÖLÜM: ŞİFRELEME II ══════════ -->
+<div class="section" id="sec-cipher2">
+  <div class="card">
+    <div class="card-title" id="c2-title">Karakter Toplamı</div>
+    <div class="info-box" id="c2-info"></div>
+    <div class="lang-section">
+      <div class="lbl" id="c2-lbl-alpha"></div>
+      <div class="alpha-prev" id="c2-ap"></div>
+    </div>
+    <div class="lbl" id="c2-lbl-input"></div>
+    <textarea id="c2-input" style="margin-bottom:1rem;"></textarea>
+    <div class="error-box" id="c2-err"></div>
+    <button class="run-btn" id="c2-btn" onclick="runAlgo2()"></button>
+    <div class="result-box" id="c2-result">
+      <button class="copy-btn" id="c2-copy" onclick="copyRes('c2-rt')"></button>
+      <div class="result-label" id="c2-lbl-out"></div>
+      <div class="result-text" id="c2-rt"></div>
+      <div class="result-meta" id="c2-rm"></div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  REMİL VERİLERİ
+// ═══════════════════════════════════════════════════════════
+const EBCED_MAP = {
+  'ا':1,'أ':1,'إ':1,'آ':1,'ب':2,'ت':400,'ث':500,'ج':3,'ح':8,'خ':600,
+  'د':4,'ذ':700,'ر':200,'ز':7,'س':60,'ش':300,'ص':90,'ض':800,'ط':9,
+  'ظ':900,'ع':70,'غ':1000,'ف':80,'ق':100,'ك':20,'ل':30,'م':40,'ن':50,
+  'ه':5,'ة':5,'و':6,'ي':10,'ى':10,'ئ':10,'ء':1,
+  'a':1,'A':1,'b':2,'B':2,'c':3,'C':3,'ç':3,'Ç':3,
+  'd':4,'D':4,'e':5,'E':5,'f':80,'F':80,'g':3,'G':3,
+  'ğ':1000,'Ğ':1000,'h':8,'H':8,'ı':10,'I':10,'i':10,'İ':10,
+  'j':3,'J':3,'k':20,'K':20,'l':30,'L':30,'m':40,'M':40,
+  'n':50,'N':50,'o':6,'O':6,'ö':70,'Ö':70,'p':80,'P':80,
+  'r':200,'R':200,'s':60,'S':60,'ş':300,'Ş':300,'t':400,'T':400,
+  'u':6,'U':6,'ü':70,'Ü':70,'v':6,'V':6,'y':10,'Y':10,'z':7,'Z':7
+};
+
+const HARF_LISTE = [
+  {v:1,h:'ا',no:1},{v:2,h:'ب',no:2},{v:3,h:'ج',no:3},{v:4,h:'د',no:4},
+  {v:5,h:'ه',no:5},{v:6,h:'و',no:6},{v:7,h:'ز',no:7},{v:8,h:'ح',no:8},
+  {v:9,h:'ط',no:9},{v:10,h:'ي',no:10},{v:20,h:'ك',no:11},{v:30,h:'ل',no:12},
+  {v:40,h:'م',no:13},{v:50,h:'ن',no:14},{v:60,h:'س',no:15},{v:70,h:'ع',no:16},
+  {v:80,h:'ف',no:17},{v:90,h:'ص',no:18},{v:100,h:'ق',no:19},{v:200,h:'ر',no:20},
+  {v:300,h:'ش',no:21},{v:400,h:'ت',no:22},{v:500,h:'ث',no:23},{v:600,h:'خ',no:24},
+  {v:700,h:'ذ',no:27},{v:800,h:'ض',no:26},{v:900,h:'ظ',no:25},{v:1000,h:'غ',no:28}
+];
+
+const REMIL_SEMBOL = {
+  1:[1,0,0,0],2:[0,1,0,0],3:[0,0,0,1],4:[0,0,0,0],
+  5:[1,0,0,1],6:[0,1,0,0],7:[1,0,1,0],8:[0,0,0,0],
+  9:[1,0,0,0],10:[0,0,1,0],11:[1,0,1,0],12:[0,0,0,1],
+  13:[0,0,0,0],14:[0,0,1,1],15:[0,0,0,1],16:[0,1,0,0],
+  17:[0,1,0,1],18:[0,0,0,0],19:[0,0,0,1],20:[0,0,1,0],
+  21:[1,1,0,1],22:[1,1,1,1],23:[0,1,1,0],24:[0,0,1,1],
+  25:[1,1,0,0],26:[0,1,0,1],27:[1,0,1,0],28:[0,0,0,0]
+};
+
+const ELEMENTS = [
+  [1,"هيدروجين","Hidrojen","Hydrogen","Hidrogen",288],
+  [2,"هيليوم","Helyum","Helium","Helium",101],
+  [3,"ليثيوم","Lityum","Lithium","Litium",596],
+  [4,"بيريليوم","Berilyum","Beryllium","Berilium",308],
+  [5,"بورون","Bor","Boron","Boron",264],
+  [6,"كربون","Karbon","Carbon","Karbon",278],
+  [7,"نيتروجين","Azot","Nitrogen","Nitrogen",729],
+  [8,"أكسجين","Oksijen","Oxygen","Oksigen",144],
+  [9,"فلور","Flor","Fluorine","Fluor",316],
+  [10,"نيون","Neon","Neon","Neon",116],
+  [11,"صوديوم","Sodyum","Sodium","Natrium",156],
+  [12,"مغنيسيوم","Magnezyum","Magnesium","Magnesium",1216],
+  [13,"ألومنيوم","Alüminyum","Aluminium","Aluminium",183],
+  [14,"سيليكون","Silisyum","Silicon","Silikon",186],
+  [15,"فوسفور","Fosfor","Phosphorus","Fosfor",432],
+  [16,"كبريت","Kükürt","Sulfur","Sulfur",632],
+  [17,"كلور","Klor","Chlorine","Klorin",256],
+  [18,"أرغون","Argon","Argon","Argon",1257],
+  [19,"بوتاسيوم","Potasyum","Potassium","Kalium",525],
+  [20,"كالسيوم","Kalsiyum","Calcium","Kalsium",167],
+  [21,"سكانديوم","Skandiyum","Scandium","Skandium",191],
+  [22,"تيتانيوم","Titanyum","Titanium","Titanium",917],
+  [23,"فاناديوم","Vanadyum","Vanadium","Vanadium",192],
+  [24,"كروم","Krom","Chromium","Krom",266],
+  [25,"منغنيز","Mangan","Manganese","Mangan",1157],
+  [26,"حديد","Demir","Iron","Besi",26],
+  [27,"كوبالت","Kobalt","Cobalt","Kobalt",459],
+  [28,"نيكل","Nikel","Nickel","Nikel",110],
+  [29,"نحاس","Bakır","Copper","Tembaga",119],
+  [30,"زنك","Çinko","Zinc","Seng",77],
+  [31,"غاليوم","Galyum","Gallium","Galium",1087],
+  [32,"جرمانيوم","Germanyum","Germanium","Germanium",350],
+  [33,"زرنيخ","Arsenik","Arsenic","Arsenikum",867],
+  [34,"سيلينيوم","Selenyum","Selenium","Selenium",216],
+  [35,"بروم","Brom","Bromine","Bromin",248],
+  [36,"كريبتون","Kripton","Krypton","Kripton",688],
+  [37,"روبيديوم","Rubidyum","Rubidium","Rubidium",278],
+  [38,"سترونتيوم","Stronsiyum","Strontium","Strontium",1172],
+  [39,"يتريوم","İtriyum","Yttrium","Itrium",666],
+  [40,"زركونيوم","Zirkonyum","Zirconium","Zirkonium",339],
+  [41,"نيوبيوم","Niyobyum","Niobium","Niobium",124],
+  [42,"موليبدنوم","Molibden","Molybdenum","Molibdenum",188],
+  [43,"تكنيشيوم","Teknesyum","Technetium","Teknesium",836],
+  [44,"روثينيوم","Rutenyum","Ruthenium","Rutenium",822],
+  [45,"روديوم","Rodyum","Rhodium","Rodium",266],
+  [46,"بلاديوم","Paladyum","Palladium","Paladium",93],
+  [47,"فضة","Gümüş","Silver","Perak",885],
+  [48,"كادميوم","Kadmiyum","Cadmium","Kadmium",121],
+  [49,"إنديوم","İndiyum","Indium","Indium",111],
+  [50,"قصدير","Kalay","Tin","Timah",404],
+  [51,"أنتيمون","Antimon","Antimony","Antimon",557],
+  [52,"تيلوريوم","Telüryum","Tellurium","Telurium",702],
+  [53,"يود","İyot","Iodine","Yodium",20],
+  [54,"زينون","Ksenon","Xenon","Xenon",123],
+  [55,"سيزيوم","Sezyum","Caesium","Sesium",133],
+  [56,"باريوم","Baryum","Barium","Barium",259],
+  [57,"لانثانوم","Lantan","Lanthanum","Lantanum",678],
+  [58,"سيريوم","Seryum","Cerium","Serium",326],
+  [59,"براسيوديم","Praseodim","Praseodymium","Praseodimium",333],
+  [60,"نيوديميوم","Neodim","Neodymium","Neodimium",176],
+  [61,"بروميثيوم","Prometyum","Promethium","Prometium",814],
+  [62,"ساماريوم","Samaryum","Samarium","Samarium",358],
+  [63,"يوروبيوم","Evropyum","Europium","Europium",280],
+  [64,"غادولينيوم","Gadolinyum","Gadolinium","Gadolinium",1157],
+  [65,"تربيوم","Terbiyum","Terbium","Terbium",658],
+  [66,"ديسبروسيوم","Disprosyum","Dysprosium","Disprosium",398],
+  [67,"هولميوم","Holmiyum","Holmium","Holmium",137],
+  [68,"إربيوم","Erbiyum","Erbium","Erbium",259],
+  [69,"ثوليوم","Tulyum","Thulium","Tulium",592],
+  [70,"يتربيوم","İterbiyum","Ytterbium","Iterbium",668],
+  [71,"لوتيشيوم","Lutesyum","Lutetium","Lutetium",802],
+  [72,"هافنيوم","Hafniyum","Hafnium","Hafnium",192],
+  [73,"تنتالوم","Tantal","Tantalum","Tantalum",927],
+  [74,"تنغستن","Tungsten","Tungsten","Tungsten",1960],
+  [75,"رينيوم","Renyum","Rhenium","Renium",316],
+  [76,"أوزميوم","Osmiyum","Osmium","Osmium",110],
+  [77,"إيريديوم","İridyum","Iridium","Iridium",281],
+  [78,"بلاتين","Platin","Platinum","Platina",493],
+  [79,"ذهب","Altın","Gold","Emas",707],
+  [80,"زئبق","Cıva","Mercury","Merkuri",109],
+  [81,"ثاليوم","Talyum","Thallium","Talium",587],
+  [82,"رصاص","Kurşun","Lead","Timbal",381],
+  [83,"بزموت","Bizmut","Bismuth","Bismut",455],
+  [84,"بولونيوم","Polonyum","Polonium","Polonium",150],
+  [85,"أستاتين","Astat","Astatine","Astatin",922],
+  [86,"رادون","Radon","Radon","Radon",261],
+  [87,"فرنسيوم","Fransiyum","Francium","Fransium",446],
+  [88,"راديوم","Radyum","Radium","Radium",261],
+  [89,"أكتينيوم","Aktinyum","Actinium","Aktinium",537],
+  [90,"ثوريوم","Toryum","Thorium","Torium",762],
+  [91,"بروتكتينيوم","Protaktinyum","Protactinium","Protaktinium",1144],
+  [92,"يورانيوم","Uranyum","Uranium","Uranium",323],
+  [93,"نبتونيوم","Neptünyum","Neptunium","Neptunium",564],
+  [94,"بلوتونيوم","Plütonyum","Plutonium","Plutonium",550],
+  [95,"أمريسيوم","Amerisyum","Americium","Amerisium",367],
+  [96,"كوريوم","Küryum","Curium","Kurium",282],
+  [97,"بركليوم","Berkelyum","Berkelium","Berkelium",308],
+  [98,"كاليفورنيوم","Kaliforniyum","Californium","Kalifornium",453],
+  [99,"أينشتانيوم","Einsteinyum","Einsteinium","Einsteinium",868],
+  [100,"فرميوم","Fermiyum","Fermium","Fermium",376]
+];
+
+// ═══════════════════════════════════════════════════════════
+//  ŞİFRELEME ALFABELERİ
+// ═══════════════════════════════════════════════════════════
+const CIPHER_LANGS = {
+  tr: {
+    arabic: false,
+    alpha: 'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ'.split('')
+  },
+  en: {
+    arabic: false,
+    alpha: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+  },
+  id: {
+    arabic: false,
+    alpha: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+  },
+  ar: {
+    arabic: true,
+    alpha: ['ا','ب','ج','د','ه','و','ز','ح','ط','ي',
+            'ك','ل','م','ن','س','ع','ف','ص','ق','ر',
+            'ش','ت','ث','خ','ذ','ض','ظ','غ'],
+    ebced: [1,2,3,4,5,6,7,8,9,10,
+            20,30,40,50,60,70,80,90,100,200,
+            300,400,500,600,700,800,900,1000]
+  }
+};
+// charValue haritaları
+Object.keys(CIPHER_LANGS).forEach(k => {
+  const l = CIPHER_LANGS[k];
+  l.charValue = {};
+  l.alpha.forEach((ch,i) => {
+    l.charValue[ch] = (l.arabic && l.ebced) ? l.ebced[i] : (i+1);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+//  DİL STRİNGLERİ
+// ═══════════════════════════════════════════════════════════
+const I18N = {
+  tr: {
+    'hdr-title':'DÖNÜŞTÜRÜCÜ & ŞİFRELEME',
+    'hdr-sub':'Remil · Element · Harf Şifreleme',
+    'sec_remil':'Remil & Element',
+    'sec_c1':'Şifreleme I — Baş·Son',
+    'sec_c2':'Şifreleme II — Toplam',
+    'nav1':'Girdi','nav2':'Remil Sembolü','nav3':'Remil Tablosu','nav4':'Element Analizi',
+    'p1title':'Girdi','p1lbl':'Metin (Arapça / Latin) veya Sayı',
+    'p1hint':'Arapça metin, Türkçe/Latin metin veya sayı girebilirsiniz.',
+    'p1res':'Ebced Değeri','p1type':'Girdi Türü','p1ebced':'Ebced / Sayı',
+    'p1letters':'Harf Bazlı Ebced',
+    'p2title':'Remil Sembolleri','p2input':'Girdi:',
+    'p2desc':'Her adımda ÷2 → en yakın harf → remil sembolü','p2chain':'Zincir:',
+    'p3title':'Remil Dönüşüm Tablosu','p3total':'Toplam:',
+    'p3s0':'Kalan 0 (önce):','p3s1':'Kalan 1 (sonra):',
+    'th1':'Adım','th2':'Sonuç','th3':'Harf','th4':'Remil No','th5':'Kalan',
+    'p4title':'Element Analizi','p4desc':'Her harf → en yakın periyodik element',
+    'p4dominant':'Baskın Element:',
+    'empty':'Önce Girdi sekmesinden değer girin.',
+    'typeText':'Metin','typeNum':'Sayı',
+    'c1_title':'Baş · Son Kaydırma',
+    'c2_title':'Karakter Toplamı',
+    'c1_info':'<strong>Nasıl çalışır?</strong><br>Metnin <strong>ilk</strong> ve <strong>son</strong> harfinin alfabe sıra numaraları toplanır → mod alfabe = <strong>başlangıç kaydırması</strong>.<br>Her harf bu kaydırmaya karşılık gelen harfe dönüşür; kaydırma her adım <strong>1 azalır</strong>. Alfabe dışı karakterler aynen korunur.',
+    'c2_info':'<strong>Nasıl çalışır?</strong><br>Metindeki her karakterin alfabe sıra numarası (Arapça\'da ebced) toplanır.<br>Toplam sabit kalır, bölen her adım 1 azalır: <em>toplam mod n → mod (n-1) → …</em><br>Bölen 1\'e düşene dek devam eder. Sonuç 0 ise <strong>A / ا</strong> yazılır.',
+    'lbl_alpha':'Alfabe','lbl_input':'Giriş Metni','lbl_out':'Çıktı',
+    'btn1':'▶ Şifrele','btn2':'▶ Hesapla','copy':'kopyala',
+    'err_empty':'Lütfen bir metin girin.','err_short':'En az 2 alfabe harfi gereklidir.',
+    'err_zero':'Hiçbir alfabe karakteri bulunamadı.',
+    'meta_first':'İlk harf','meta_last':'Son harf','meta_sum':'Toplam',
+    'meta_shift':'Kaydırma','meta_alpha':'Alfabe',
+    'meta_total':'Toplam değer','meta_outlen':'Çıktı uzunluğu',
+    'meta_vals':'Değerler','meta_steps':'Adımlar',
+    'ph1':'Metni buraya girin...','ph2':'Metni buraya girin...',
+    'disclaimer':'<strong>⚠ ÖNEMLİ UYARI:</strong> Bu araç yalnızca <strong>hesaplama ve tefekkür</strong> içindir. <strong>Fal aracı değildir. Gayb bilgisine erişim aracı değildir.</strong> Sonuçlar bağlayıcı değildir. Alimlerin kağıt üzerinde yaptıkları ebced ve remil hesaplamalarını otomatikleştiren bir yardımcı araçtır.'
+  },
+  en: {
+    'hdr-title':'CONVERTER & CIPHER',
+    'hdr-sub':'Remil · Element · Letter Cipher',
+    'sec_remil':'Remil & Element',
+    'sec_c1':'Cipher I — First·Last',
+    'sec_c2':'Cipher II — Sum',
+    'nav1':'Input','nav2':'Remil Symbol','nav3':'Remil Table','nav4':'Element Analysis',
+    'p1title':'Input','p1lbl':'Text (Arabic / Latin) or Number',
+    'p1hint':'You can enter Arabic text, Latin text or a number.',
+    'p1res':'Abjad Value','p1type':'Input Type','p1ebced':'Abjad / Number',
+    'p1letters':'Letter-Based Abjad',
+    'p2title':'Remil Symbols','p2input':'Input:',
+    'p2desc':'Each step: ÷2 → nearest letter → remil symbol','p2chain':'Chain:',
+    'p3title':'Remil Conversion Table','p3total':'Total:',
+    'p3s0':'Remainder 0 (first):','p3s1':'Remainder 1 (after):',
+    'th1':'Step','th2':'Result','th3':'Letter','th4':'Remil No','th5':'Remainder',
+    'p4title':'Element Analysis','p4desc':'Each letter → nearest periodic element',
+    'p4dominant':'Dominant Element:',
+    'empty':'Enter a value in the Input tab first.',
+    'typeText':'Text','typeNum':'Number',
+    'c1_title':'First · Last Shift',
+    'c2_title':'Character Sum',
+    'c1_info':'<strong>How it works?</strong><br>The alphabet positions of the <strong>first</strong> and <strong>last</strong> letters are summed → mod alphabet = <strong>starting shift</strong>.<br>Each letter transforms to the letter at that shift; shift <strong>decreases by 1</strong> each step. Non-alphabet characters are preserved.',
+    'c2_info':'<strong>How it works?</strong><br>Each character\'s alphabet position (abjad for Arabic) is summed.<br>Total stays fixed, divisor decreases by 1 each step: <em>total mod n → mod (n-1) → …</em><br>Continues until divisor reaches 1. If result is 0, <strong>A / ا</strong> is written.',
+    'lbl_alpha':'Alphabet','lbl_input':'Input Text','lbl_out':'Output',
+    'btn1':'▶ Encode','btn2':'▶ Calculate','copy':'copy',
+    'err_empty':'Please enter some text.','err_short':'At least 2 alphabet letters required.',
+    'err_zero':'No alphabet characters found.',
+    'meta_first':'First letter','meta_last':'Last letter','meta_sum':'Sum',
+    'meta_shift':'Shift','meta_alpha':'Alphabet',
+    'meta_total':'Total value','meta_outlen':'Output length',
+    'meta_vals':'Values','meta_steps':'Steps',
+    'ph1':'Enter text here...','ph2':'Enter text here...',
+    'disclaimer':'<strong>⚠ IMPORTANT NOTICE:</strong> This tool is for <strong>calculation and contemplation only</strong>. <strong>It is not a divination tool. It does not provide access to hidden knowledge (ghayb).</strong> Results are not binding. It is a utility that automates the abjad and remil calculations that scholars traditionally perform on paper.'
+  },
+  id: {
+    'hdr-title':'KONVERTER & SANDI',
+    'hdr-sub':'Remil · Elemen · Sandi Huruf',
+    'sec_remil':'Remil & Elemen',
+    'sec_c1':'Sandi I — Awal·Akhir',
+    'sec_c2':'Sandi II — Jumlah',
+    'nav1':'Masukan','nav2':'Simbol Remil','nav3':'Tabel Remil','nav4':'Analisis Elemen',
+    'p1title':'Masukan','p1lbl':'Teks (Arab / Latin) atau Angka',
+    'p1hint':'Anda dapat memasukkan teks Arab, teks Latin, atau angka.',
+    'p1res':'Nilai Abjad','p1type':'Jenis Masukan','p1ebced':'Abjad / Angka',
+    'p1letters':'Abjad Per Huruf',
+    'p2title':'Simbol Remil','p2input':'Masukan:',
+    'p2desc':'Setiap langkah: ÷2 → huruf terdekat → simbol remil','p2chain':'Rantai:',
+    'p3title':'Tabel Konversi Remil','p3total':'Total:',
+    'p3s0':'Sisa 0 (pertama):','p3s1':'Sisa 1 (setelah):',
+    'th1':'Langkah','th2':'Hasil','th3':'Huruf','th4':'No Remil','th5':'Sisa',
+    'p4title':'Analisis Elemen','p4desc':'Setiap huruf → elemen periodik terdekat',
+    'p4dominant':'Elemen Dominan:',
+    'empty':'Masukkan nilai di tab Masukan terlebih dahulu.',
+    'typeText':'Teks','typeNum':'Angka',
+    'c1_title':'Geser Awal · Akhir',
+    'c2_title':'Jumlah Karakter',
+    'c1_info':'<strong>Cara kerja?</strong><br>Posisi alfabet huruf <strong>pertama</strong> dan <strong>terakhir</strong> dijumlahkan → mod alfabet = <strong>pergeseran awal</strong>.<br>Setiap huruf berubah ke huruf pada posisi pergeseran; pergeseran <strong>berkurang 1</strong> setiap langkah.',
+    'c2_info':'<strong>Cara kerja?</strong><br>Posisi alfabet setiap karakter dijumlahkan.<br>Total tetap, pembagi berkurang 1 setiap langkah: <em>total mod n → mod (n-1) → …</em><br>Berlanjut hingga pembagi mencapai 1. Jika hasil 0, tulis <strong>A / ا</strong>.',
+    'lbl_alpha':'Alfabet','lbl_input':'Teks Masukan','lbl_out':'Keluaran',
+    'btn1':'▶ Sandi','btn2':'▶ Hitung','copy':'salin',
+    'err_empty':'Silakan masukkan teks.','err_short':'Minimal 2 huruf alfabet diperlukan.',
+    'err_zero':'Tidak ada karakter alfabet ditemukan.',
+    'meta_first':'Huruf pertama','meta_last':'Huruf terakhir','meta_sum':'Jumlah',
+    'meta_shift':'Geseran','meta_alpha':'Alfabet',
+    'meta_total':'Total nilai','meta_outlen':'Panjang keluaran',
+    'meta_vals':'Nilai','meta_steps':'Langkah',
+    'ph1':'Masukkan teks di sini...','ph2':'Masukkan teks di sini...',
+    'disclaimer':'<strong>⚠ PERHATIAN PENTING:</strong> Alat ini hanya untuk <strong>perhitungan dan tadabbur</strong>. <strong>Bukan alat ramal. Bukan alat akses ilmu ghaib.</strong> Hasil tidak bersifat mengikat. Ini adalah alat bantu yang mengotomatiskan perhitungan abjad dan remil yang biasa dilakukan para ulama di atas kertas.'
+  },
+  ar: {
+    'hdr-title':'أداة التحويل والتشفير',
+    'hdr-sub':'الرمل · العنصر · تشفير الحروف',
+    'sec_remil':'الرمل والعنصر',
+    'sec_c1':'تشفير I — الأول·الأخير',
+    'sec_c2':'تشفير II — المجموع',
+    'nav1':'الإدخال','nav2':'رمز الرمل','nav3':'جدول الرمل','nav4':'تحليل العناصر',
+    'p1title':'الإدخال','p1lbl':'نص (عربي / لاتيني) أو رقم',
+    'p1hint':'يمكنك إدخال نص عربي أو لاتيني أو رقم.',
+    'p1res':'قيمة الأبجد','p1type':'نوع الإدخال','p1ebced':'الأبجد / الرقم',
+    'p1letters':'الأبجد لكل حرف',
+    'p2title':'رموز الرمل','p2input':'الإدخال:',
+    'p2desc':'كل خطوة: ÷2 → أقرب حرف → رمز الرمل','p2chain':'السلسلة:',
+    'p3title':'جدول تحويل الرمل','p3total':'المجموع:',
+    'p3s0':'الباقي 0 (أولاً):','p3s1':'الباقي 1 (بعد):',
+    'th1':'الخطوة','th2':'النتيجة','th3':'الحرف','th4':'رقم الرمل','th5':'الباقي',
+    'p4title':'تحليل العناصر','p4desc':'كل حرف → أقرب عنصر في الجدول الدوري',
+    'p4dominant':'العنصر المهيمن:',
+    'empty':'أدخل قيمة في تبويب الإدخال أولاً.',
+    'typeText':'نص','typeNum':'رقم',
+    'c1_title':'إزاحة الأول · الأخير',
+    'c2_title':'مجموع الأحرف',
+    'c1_info':'<strong>كيف يعمل؟</strong><br>يُجمع ترتيب <strong>أول</strong> و<strong>آخر</strong> حرف → mod الأبجدية = <strong>الإزاحة الابتدائية</strong>.<br>كل حرف يتحول إلى الحرف عند موضع الإزاحة؛ تنقص الإزاحة <strong>بمقدار 1</strong> كل خطوة.',
+    'c2_info':'<strong>كيف يعمل؟</strong><br>تُجمع قيمة الأبجد لكل حرف.<br>المجموع ثابت والمقسوم عليه ينقص 1 كل خطوة: <em>المجموع mod n → mod (n-1) → …</em><br>يستمر حتى يصل المقسوم إلى 1. إذا كانت النتيجة 0 يُكتب <strong>ا</strong>.',
+    'lbl_alpha':'الأبجدية','lbl_input':'النص المدخل','lbl_out':'المخرجات',
+    'btn1':'▶ تشفير','btn2':'▶ احسب','copy':'نسخ',
+    'err_empty':'الرجاء إدخال نص.','err_short':'يلزم وجود حرفين على الأقل.',
+    'err_zero':'لم يتم العثور على أحرف.',
+    'meta_first':'الحرف الأول','meta_last':'الحرف الأخير','meta_sum':'المجموع',
+    'meta_shift':'الإزاحة','meta_alpha':'الأبجدية',
+    'meta_total':'المجموع الكلي','meta_outlen':'طول المخرجات',
+    'meta_vals':'القيم','meta_steps':'الخطوات',
+    'ph1':'أدخل النص هنا...','ph2':'أدخل النص هنا...',
+    'disclaimer':'<strong>⚠ تنبيه مهم:</strong> هذه الأداة مخصصة <strong>للحساب والتفكر فقط</strong>. <strong>ليست أداة تنجيم أو تكهن. ولا توفر أي وصول إلى علم الغيب.</strong> النتائج غير ملزمة. هي أداة مساعدة تُؤتمت حسابات الأبجد والرمل التي يجريها العلماء تقليديًا على الورق.'
+  }
+};
+
+// ═══════════════════════════════════════════════════════════
+//  DURUM
+// ═══════════════════════════════════════════════════════════
+let LANG = 'tr';
+let G = {toplam:0,adimlar:[],sifir:[],bir:[],harfler:[]};
+let currentSection = 'remil';
+
+// ═══════════════════════════════════════════════════════════
+//  BÖLÜM & PANEL NAVİGASYON
+// ═══════════════════════════════════════════════════════════
+function showSection(sec, btn) {
+  currentSection = sec;
+  document.querySelectorAll('.stab').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+sec).classList.add('active');
+  // remil alt nav
+  document.getElementById('remil-nav').classList.toggle('visible', sec==='remil');
+}
+
+function showP(id, btn) {
+  document.querySelectorAll('#sec-remil .panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(btn) btn.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  DİL DEĞİŞİMİ
+// ═══════════════════════════════════════════════════════════
+function setLang(l) {
+  LANG = l;
+  const t = I18N[l];
+  const isAr = l === 'ar';
+
+  // Dil butonları
+  ['tr','en','id','ar'].forEach(k => {
+    document.getElementById('lb-'+k).classList.toggle('active', k===l);
+  });
+
+  // HTML yönü
+  document.documentElement.setAttribute('dir', isAr ? 'rtl' : 'ltr');
+
+  // Header
+  document.getElementById('hdr-title').textContent = t['hdr-title'];
+  document.getElementById('hdr-sub').textContent   = t['hdr-sub'];
+
+  // Bölüm sekmeleri
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if(t[key] !== undefined) el.textContent = t[key];
+  });
+  // Bölüm span'ları (section tabs)
+  document.querySelectorAll('.stab span[data-i18n]').forEach(el=>{
+    const k=el.getAttribute('data-i18n');
+    if(t[k]) el.textContent=t[k];
+  });
+
+  // Şifreleme kartları
+  document.getElementById('c1-title').textContent = t['c1_title'];
+  document.getElementById('c2-title').textContent = t['c2_title'];
+  document.getElementById('c1-info').innerHTML    = t['c1_info'];
+  document.getElementById('c2-info').innerHTML    = t['c2_info'];
+  document.getElementById('c1-lbl-alpha').textContent = t['lbl_alpha'];
+  document.getElementById('c2-lbl-alpha').textContent = t['lbl_alpha'];
+  document.getElementById('c1-lbl-input').textContent = t['lbl_input'];
+  document.getElementById('c2-lbl-input').textContent = t['lbl_input'];
+  document.getElementById('c1-lbl-out').textContent   = t['lbl_out'];
+  document.getElementById('c2-lbl-out').textContent   = t['lbl_out'];
+  document.getElementById('c1-btn').textContent  = t['btn1'];
+  document.getElementById('c2-btn').textContent  = t['btn2'];
+  document.getElementById('c1-copy').textContent = t['copy'];
+  document.getElementById('c2-copy').textContent = t['copy'];
+
+  // Textarea'lar
+  const ta1 = document.getElementById('c1-input');
+  const ta2 = document.getElementById('c2-input');
+  ta1.placeholder = t['ph1'];
+  ta2.placeholder = t['ph2'];
+  ta1.className = isAr ? 'ar-dir' : '';
+  ta2.className = isAr ? 'ar-dir' : '';
+  ta1.value = ''; ta2.value = '';
+
+  // Alfabe önizlemesi
+  const cl = CIPHER_LANGS[l];
+  ['c1-ap','c2-ap'].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = cl.alpha.join('  ');
+    el.className = 'alpha-prev' + (isAr?' ar-dir':'');
+  });
+
+  // Sonuçları temizle
+  document.getElementById('c1-result').classList.remove('visible');
+  document.getElementById('c2-result').classList.remove('visible');
+
+  // p1tur dil güncellemesi
+  const turEl = document.getElementById('p1tur');
+  if(turEl && turEl.textContent !== '—') {
+    const isNum = ['Sayı','Number','Angka','رقم'].includes(turEl.textContent);
+    turEl.textContent = isNum ? t['typeNum'] : t['typeText'];
+  }
+  // Disclaimer güncelle
+  const disclaimerEl = document.getElementById('disclaimer-text');
+  if(disclaimerEl && t['disclaimer']) disclaimerEl.innerHTML = t['disclaimer'];
+  if(G.toplam) { guncelleP4(); }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  REMİL FONKSİYONLARI
+// ═══════════════════════════════════════════════════════════
+function enYakinHarf(sayi) {
+  let en=HARF_LISTE[0], minF=Math.abs(sayi-HARF_LISTE[0].v);
+  for(let e of HARF_LISTE){let f=Math.abs(sayi-e.v);if(f<minF){minF=f;en=e;}}
+  return en;
+}
+function enYakinElement(harfEbced) {
+  for(let el of ELEMENTS){if(el[5]%harfEbced===0)return el;}
+  return ELEMENTS.reduce((a,b)=>Math.abs(a[5]-harfEbced)<=Math.abs(b[5]-harfEbced)?a:b);
+}
+function sembolHTML(harfNo) {
+  const s=REMIL_SEMBOL[harfNo]||[0,0,0,0];
+  let html='<div class="remil-symbol">';
+  for(let bit of s){html+='<div class="remil-row">';html+=bit===1?'<div class="dot"></div>':'<div class="line"></div>';html+='</div>';}
+  return html+'</div>';
+}
+function ebcedHesapla(metin) {
+  let toplam=0,satirlar=[];
+  for(let k of metin){if(k===' '||k==='\n')continue;const e=EBCED_MAP[k]||0;if(e>0){toplam+=e;satirlar.push({k,e});}}
+  return {toplam,satirlar};
+}
+function remilDonustur(sayi) {
+  let adimlar=[],s=sayi,adim=1;
+  while(s>0&&adim<=40){
+    const kalan=s%2;const bolum=Math.round(s/2);
+    const harf=enYakinHarf(bolum>0?bolum:1);
+    const remilNo=((harf.no-1)%16)+1;
+    adimlar.push({adim,sayi:s,kalan,bolumStr:(s/2)%1!==0?(s/2).toFixed(1)+'→'+bolum:bolum,harf:harf.h,ebced:harf.v,no:harf.no,remilNo});
+    s=Math.floor(s/2);adim++;
+  }
+  return adimlar;
+}
+
+function isle() {
+  const raw = document.getElementById('girdi').value.trim();
+  const sonucEl = document.getElementById('p1sonuc');
+  if (!raw) { sonucEl.style.display='none'; G={toplam:0,adimlar:[],sifir:[],bir:[],harfler:[]}; return; }
+  const t = I18N[LANG];
+  const sayiMi = !isNaN(parseInt(raw)) && raw.match(/^\d+$/);
+  let toplam = 0, harfler = [];
+  if (sayiMi) {
+    toplam = parseInt(raw);
+    document.getElementById('p1tur').textContent = t['typeNum'];
+    document.getElementById('p1harfler').style.display = 'none';
+  } else {
+    const r = ebcedHesapla(raw);
+    toplam = r.toplam;
+    harfler = r.satirlar;
+    document.getElementById('p1tur').textContent = t['typeText'];
+    if (harfler.length > 0) {
+      document.getElementById('p1harfler').style.display = 'block';
+      const harfHTML = harfler.map(function(s) {
+        return '<div style="text-align:center;background:var(--void-3);border:1px solid var(--gold-dark);padding:.4rem .6rem;">'
+          + '<div style="font-family:var(--arabic);font-size:1.4rem;color:var(--gold);">' + s.k + '</div>'
+          + '<div style="font-size:.6rem;color:var(--text-mid);">' + s.e + '</div>'
+          + '</div>';
+      }).join('');
+      document.getElementById('p1harflist').innerHTML = harfHTML;
+    }
+  }
+  document.getElementById('p1val').textContent=toplam;
+  sonucEl.style.display='block';
+  if(!toplam)return;
+  const adimlar=remilDonustur(toplam);
+  const sifir=adimlar.filter(a=>a.kalan===0);
+  const bir=adimlar.filter(a=>a.kalan===1);
+  G={toplam,adimlar,sifir,bir,harfler};
+  guncelleP2();guncelleP3();guncelleP4();
+}
+
+function guncelleP2(){
+  document.getElementById('p2empty').style.display='none';
+  document.getElementById('p2content').style.display='block';
+  document.getElementById('p2gval').textContent=G.toplam;
+  let grid='',zincir='';
+  for(let a of G.adimlar){
+    grid+=`<div class="sym-item"><div class="sym-no">${a.adim}.</div>${sembolHTML(a.no)}<div class="sym-label" style="font-family:var(--arabic);font-size:.9rem;color:var(--gold);">${a.harf}</div><div class="sym-label">${a.ebced}</div></div>`;
+    zincir+=`<div style="text-align:center;">${sembolHTML(a.no)}<div style="font-family:var(--arabic);font-size:.8rem;color:var(--gold);margin-top:.2rem;">${a.harf}</div></div>`;
+  }
+  document.getElementById('p2grid').innerHTML=grid;
+  document.getElementById('p2zincir').innerHTML=zincir;
+}
+
+function guncelleP3(){
+  document.getElementById('p3empty').style.display='none';
+  document.getElementById('p3content').style.display='block';
+  document.getElementById('p3top').textContent=G.toplam;
+  let html='';
+  for(let a of G.adimlar){html+=`<tr><td class="dim">${a.adim}</td><td class="dim">${a.sayi} ÷ 2</td><td>${a.bolumStr}</td><td class="ar">${a.harf}</td><td class="gld">${a.ebced}</td><td class="gld">${a.remilNo}</td><td class="${a.kalan===0?'k0':'k1'}">${a.kalan}</td></tr>`;}
+  document.getElementById('p3tbody').innerHTML=html;
+  document.getElementById('p3s0').innerHTML=G.sifir.map(r=>`<div class="chip">${r.remilNo} <span class="ar" style="font-size:.9rem;">${r.harf}</span></div>`).join('');
+  document.getElementById('p3s1').innerHTML=G.bir.map(r=>`<div class="chip" style="color:var(--text-dim);border-color:var(--void-4);">${r.remilNo} <span class="ar" style="font-size:.9rem;">${r.harf}</span></div>`).join('');
+}
+
+function elAdi(el){
+  if(LANG==='en')return el[3];
+  if(LANG==='id')return el[4];
+  if(LANG==='ar')return el[1];
+  return el[2];
+}
+
+function guncelleP4(){
+  if(!G.harfler.length&&G.toplam){G.harfler=[{k:'—',e:G.toplam}];}
+  if(!G.harfler.length)return;
+  document.getElementById('p4empty').style.display='none';
+  document.getElementById('p4content').style.display='block';
+  const sayac={};let html='';
+  for(let s of G.harfler){
+    const el=enYakinElement(s.e);const ad=elAdi(el);
+    sayac[ad]=(sayac[ad]||0)+1;
+    html+=`<div class="el-item"><div class="el-harf">${s.k}</div><div class="el-ebced">${s.e}</div><div class="el-arrow">↓</div><div class="el-no">#${el[0]}</div><div class="el-ar">${el[1]}</div><div class="el-name">${ad}</div></div>`;
+  }
+  document.getElementById('p4grid').innerHTML=html;
+  const baskin=Object.entries(sayac).sort((a,b)=>b[1]-a[1])[0];
+  const baskinEl=ELEMENTS.find(e=>elAdi(e)===baskin[0]);
+  document.getElementById('p4baskin').innerHTML=baskinEl?`<span style="font-family:var(--arabic);font-size:1.4rem;">${baskinEl[1]}</span> — ${elAdi(baskinEl)} (#${baskinEl[0]}) · Ebced: ${baskinEl[5]}`:'—';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ŞİFRELEME YARDIMCILARI
+// ═══════════════════════════════════════════════════════════
+function showErr(id, msg){const el=document.getElementById(id);el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',3500);}
+function copyRes(id){navigator.clipboard.writeText(document.getElementById(id).textContent).catch(()=>{});}
+function normC(raw,k){return CIPHER_LANGS[k].arabic?raw:raw.toUpperCase();}
+function cidx(ch,k){return CIPHER_LANGS[k].alpha.indexOf(ch);}
+
+// ═══════════════════════════════════════════════════════════
+//  ALGORİTMA 1
+// ═══════════════════════════════════════════════════════════
+function runAlgo1(){
+  const t=I18N[LANG];
+  const raw=document.getElementById('c1-input').value.trim();
+  if(!raw){showErr('c1-err',t['err_empty']);return;}
+  const k=LANG, cl=CIPHER_LANGS[k], alpha=cl.alpha, n=alpha.length;
+  const text=normC(raw,k);
+  const chars=text.split('');
+  const litIdxs=chars.map(c=>cidx(c,k)).filter(i=>i!==-1);
+  if(litIdxs.length<2){showErr('c1-err',t['err_short']);return;}
+  const first=litIdxs[0], last=litIdxs[litIdxs.length-1];
+  const sum=(first+1)+(last+1);
+  const shift=((sum-1)%n)+1;
+  let out='', cur=shift;
+  for(const ch of chars){
+    const i=cidx(ch,k);
+    if(i===-1){out+=ch;}
+    else{out+=alpha[((cur-1)%n+n)%n];cur=cur>1?cur-1:n;}
+  }
+  const rb=document.getElementById('c1-result');
+  const rt=document.getElementById('c1-rt');
+  const rm=document.getElementById('c1-rm');
+  rb.classList.add('visible');
+  rt.textContent=out;
+  rt.className='result-text'+(cl.arabic?' ar-dir':'');
+  rm.innerHTML=`<div class="meta-row">
+    <span><span class="mk">${t['meta_first']}:</span> ${alpha[first]} (${first+1})</span>
+    <span><span class="mk">${t['meta_last']}:</span> ${alpha[last]} (${last+1})</span>
+    <span><span class="mk">${t['meta_sum']}:</span> ${sum}</span>
+    <span><span class="mk">${t['meta_shift']}:</span> ${shift} → <span class="sc-char">${alpha[((shift-1)%n+n)%n]}</span></span>
+    <span><span class="mk">${t['meta_alpha']}:</span> ${n}</span>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ALGORİTMA 2
+// ═══════════════════════════════════════════════════════════
+function runAlgo2(){
+  const t=I18N[LANG];
+  const raw=document.getElementById('c2-input').value.trim();
+  if(!raw){showErr('c2-err',t['err_empty']);return;}
+  const k=LANG, cl=CIPHER_LANGS[k], alpha=cl.alpha, n=alpha.length;
+  const text=normC(raw,k);
+  const chars=text.split('');
+  const targetLen=chars.length;
+  let total=0;
+  const breakdown=[];
+  chars.forEach(ch=>{
+    const v=cl.charValue[ch]||0;
+    total+=v;
+    if(v>0)breakdown.push(`${ch}=${v}`);
+  });
+  if(total===0){showErr('c2-err',t['err_zero']);return;}
+  const firstAlpha=alpha[0];
+  const steps=[];
+  let out='';
+  for(let divisor=n;divisor>=1&&out.length<targetLen;divisor--){
+    if(divisor===1){
+      out+=firstAlpha;
+      steps.push(`${total} mod 1=0→<span class="sc-char">${firstAlpha}</span>`);
+    } else {
+      const rem=total%divisor;
+      if(rem===0){out+=firstAlpha;steps.push(`${total} mod ${divisor}=0→<span class="sc-char">${firstAlpha}</span>`);}
+      else{out+=alpha[rem-1];steps.push(`${total} mod ${divisor}=${rem}→<span class="sc-char">${alpha[rem-1]}</span>`);}
+    }
+  }
+  out=out.slice(0,targetLen);
+  const rb=document.getElementById('c2-result');
+  const rt=document.getElementById('c2-rt');
+  const rm=document.getElementById('c2-rm');
+  rb.classList.add('visible');
+  rt.textContent=out;
+  rt.className='result-text'+(cl.arabic?' ar-dir':'');
+  const bdStr=breakdown.slice(0,12).join(' + ')+(breakdown.length>12?' + …':'');
+  const stStr=steps.slice(0,10).join(' · ')+(steps.length>10?' · …':'');
+  rm.innerHTML=`<div class="meta-row">
+    <span><span class="mk">${t['meta_total']}:</span> ${total}</span>
+    <span><span class="mk">${t['meta_alpha']}:</span> ${n}</span>
+    <span><span class="mk">${t['meta_outlen']}:</span> ${out.length}</span>
+  </div>
+  <div class="step-chain"><span class="mk">${t['meta_vals']}:</span> ${bdStr}</div>
+  <div class="step-chain"><span class="mk">${t['meta_steps']}:</span> ${stStr}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+setLang('tr');
+</script>
+</body>
+</html>
